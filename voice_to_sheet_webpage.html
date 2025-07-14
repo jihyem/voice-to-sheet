@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>음성으로 도전행동 기록하기</title>
+</head>
+<body>
+    <h2>🎤 말해서 스프레드시트에 기록</h2>
+    <button id="start">말하기 시작</button>
+    <p id="output">여기에 인식된 텍스트가 뜹니다</p>
+    <script>
+        const startBtn = document.getElementById('start');
+        const output = document.getElementById('output');
+        
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ko-KR';
+
+        startBtn.onclick = () => {
+            recognition.start();
+            output.textContent = '듣는 중...';
+        }
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            output.textContent = transcript;
+            
+            // 말한 내용을 전송
+            fetch("https://script.google.com/macros/s/AKfycbxfgymI_VYnOq0MRncOh7eskXJEfIMOQu1aZjyjo1WqEeQCmJMZn7KLVDosFgwZvPEb4Q/exec", {
+                method: "POST",
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(parseSpeech(transcript))
+            });
+        }
+
+        function parseSpeech(text) {
+            // 간단히 키워드 찾아서 데이터 나누기
+            const data = {
+                name: '', date: '', behavior: '', intensity: '', time: '', duration: '', location: '', action: ''
+            };
+
+            const regexMap = {
+                name: /이름은 (.+?)(,|\.|\s|$)/,
+                date: /날짜는 (.+?)(,|\.|\s|$)/,
+                behavior: /(도전행동은|행동은) (.+?)(,|\.|\s|$)/,
+                intensity: /강도는 (.+?)(,|\.|\s|$)/,
+                time: /시간은 (.+?)(,|\.|\s|$)/,
+                duration: /지속시간은 (.+?)(,|\.|\s|$)/,
+                location: /장소는 (.+?)(,|\.|\s|$)/,
+                action: /조치사항은 (.+?)(,|\.|\s|$)/,
+            };
+
+            for (let key in regexMap) {
+                const match = text.match(regexMap[key]);
+                if (match) {
+                    data[key] = match[1].trim();
+                }
+            }
+
+            return data;
+        }
+    </script>
+</body>
+</html>
